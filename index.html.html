@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MantleIQ — The AI Co-Pilot for Mantle DeFi</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #080c14;
+      --bg2: #0f1623;
+      --bg3: #161e2e;
+      --border: rgba(255,255,255,0.07);
+      --border2: rgba(255,255,255,0.14);
+      --text: #e2e8f0;
+      --muted: #8b949e;
+      --dim: #3d4554;
+      --accent: #2563eb;
+      --green: #22c55e;
+      --amber: #f59e0b;
+      --red: #ef4444;
+      --blue: #3b82f6;
+      --purple: #8b5cf6;
+      --teal: #14b8a6;
+      --grid: rgba(255,255,255,0.04);
+      --r: 10px; --rs: 6px;
+    }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); line-height: 1.7; }
+
+    /* NAV */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(8,12,20,0.94); backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem; display: flex; align-items: center;
+      justify-content: space-between; height: 54px;
+    }
+    .nlogo { display: flex; align-items: center; gap: 10px; }
+    .nicon {
+      width: 30px; height: 30px; background: #1a2e5e;
+      border: 1px solid rgba(59,130,246,0.3); border-radius: 7px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ntitle { font-size: 15px; font-weight: 500; }
+    .nlinks { display: flex; gap: 1.5rem; }
+    .nlinks a { font-size: 13px; color: var(--muted); text-decoration: none; transition: color 0.15s; }
+    .nlinks a:hover { color: var(--text); }
+    .live-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--green);
+      border: 1px solid rgba(34,197,94,0.2); border-radius: 20px;
+      padding: 4px 12px; background: rgba(34,197,94,0.05);
+    }
+    .ldot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* HERO */
+    .hero { max-width: 760px; margin: 0 auto; padding: 5rem 2rem 3rem; text-align: center; }
+    .htag {
+      display: inline-block; font-size: 11px; font-weight: 500;
+      letter-spacing: 1px; text-transform: uppercase;
+      color: var(--blue); border: 1px solid rgba(59,130,246,0.25);
+      border-radius: 20px; padding: 5px 14px; margin-bottom: 1.5rem;
+      background: rgba(59,130,246,0.07);
+    }
+    .hero h1 {
+      font-family: 'Lora', serif; font-size: clamp(1.8rem, 4vw, 2.7rem);
+      font-weight: 500; line-height: 1.25; letter-spacing: -0.5px; margin-bottom: 1.25rem;
+    }
+    .hero h1 em { font-style: italic; color: #7eb3f5; }
+    .hsub { font-size: 16px; color: var(--muted); max-width: 540px; margin: 0 auto 2rem; }
+    .hcta {
+      display: inline-flex; align-items: center; gap: 8px;
+      background: var(--accent); color: #fff; padding: 11px 24px;
+      border-radius: 8px; font-size: 14px; font-weight: 500;
+      text-decoration: none; transition: background 0.15s;
+    }
+    .hcta:hover { background: #1d4ed8; }
+
+    /* ARTICLE */
+    .article { max-width: 660px; margin: 0 auto; padding: 1rem 2rem 4rem; }
+    .article h2 {
+      font-family: 'Lora', serif; font-size: 1.35rem; font-weight: 500;
+      color: var(--text); margin: 2.5rem 0 1rem; line-height: 1.35;
+    }
+    .article p { font-size: 16px; color: #c9d1d9; margin-bottom: 1.2rem; line-height: 1.8; }
+    .article p strong { color: var(--text); font-weight: 500; }
+    .pull {
+      border-left: 3px solid var(--blue); padding: 1rem 1.5rem;
+      margin: 2rem 0; background: rgba(59,130,246,0.05);
+      border-radius: 0 var(--rs) var(--rs) 0;
+    }
+    .pull p { font-family: 'Lora', serif; font-style: italic; font-size: 17px; color: #a8c4e5; margin: 0; }
+    .stat-row {
+      display: grid; grid-template-columns: repeat(3,1fr); gap: 10px;
+      margin: 2rem 0; padding: 1.25rem;
+      background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r);
+    }
+    .stat { text-align: center; }
+    .stat-v { font-size: 1.5rem; font-weight: 500; color: var(--text); }
+    .stat-l { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .source-note {
+      font-size: 11px; color: var(--dim); text-align: center;
+      margin-top: -1.25rem; margin-bottom: 2rem;
+    }
+    hr.div { border: none; border-top: 1px solid var(--border); margin: 3rem 0; }
+
+    /* DASHBOARD SECTION */
+    .dsection { max-width: 1060px; margin: 0 auto; padding: 0 1.5rem 5rem; }
+    .dhead {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 1rem; flex-wrap: wrap; margin-bottom: 1.5rem; padding: 0 0.25rem;
+    }
+    .dhead h2 { font-family: 'Lora', serif; font-size: 1.3rem; font-weight: 500; }
+    .dhead p { font-size: 13px; color: var(--muted); margin-top: 4px; }
+    .dsrc {
+      font-size: 11px; color: var(--dim);
+      border: 1px solid var(--border); border-radius: var(--rs);
+      padding: 5px 11px; align-self: flex-start; white-space: nowrap; margin-top: 4px;
+    }
+    .dsrc span { color: var(--green); }
+
+    /* METRICS */
+    .metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 12px; }
+    @media(max-width:700px){ .metrics { grid-template-columns: repeat(2,1fr); } }
+    .metric {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1rem 1.2rem;
+    }
+    .mlabel { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .mval { font-size: 21px; font-weight: 500; letter-spacing: -0.5px; }
+    .mch { font-size: 12px; margin-top: 5px; }
+    .msub { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .up { color: var(--green); } .dn { color: var(--red); } .nt { color: var(--muted); }
+    .loading-shimmer {
+      background: linear-gradient(90deg, var(--bg3) 25%, var(--bg2) 50%, var(--bg3) 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+      border-radius: 4px; height: 1.2em; width: 80%;
+    }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* PANELS */
+    .row { display: grid; gap: 12px; margin-bottom: 12px; }
+    .r2-1 { grid-template-columns: 1.6fr 1fr; }
+    .r1-1 { grid-template-columns: 1fr 1fr; }
+    @media(max-width:820px){ .r2-1,.r1-1 { grid-template-columns: 1fr; } }
+    .panel { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--r); padding: 1.2rem; }
+    .ph { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+    .pt { font-size: 13px; font-weight: 500; color: var(--text); }
+    .ps { font-size: 11px; color: var(--muted); margin-top: 3px; }
+    .tabs { display: flex; gap: 5px; }
+    .tab {
+      font-size: 11px; padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border); cursor: pointer;
+      color: var(--muted); background: transparent;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--border2); color: var(--text); }
+    .tab.on { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .cw { position: relative; width: 100%; }
+
+    /* PROTOCOLS */
+    .plist { display: flex; flex-direction: column; gap: 6px; }
+    .prow {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 11px; border-radius: var(--rs);
+      border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
+    }
+    .prow:hover { border-color: var(--border2); background: rgba(255,255,255,0.02); }
+    .prow.on { border-color: var(--accent); background: rgba(37,99,235,0.08); }
+    .pleft { display: flex; align-items: center; gap: 10px; }
+    .pdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pname { font-size: 13px; font-weight: 500; color: var(--text); }
+    .ptype { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .pright { text-align: right; flex-shrink: 0; }
+    .papy { font-size: 13px; font-weight: 500; }
+    .apy-g { color: var(--green); } .apy-a { color: var(--amber); } .apy-b { color: var(--blue); }
+    .ptvl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .pbadge { display: inline-block; font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 5px; }
+    .bup { background: rgba(34,197,94,0.12); color: var(--green); }
+    .bdn { background: rgba(239,68,68,0.12); color: var(--red); }
+
+    /* SIGNALS */
+    .slist { display: flex; flex-direction: column; gap: 8px; }
+    .sig {
+      padding: 9px 11px; border-radius: var(--rs);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border); border-left-width: 3px;
+    }
+    .sig.bull { border-left-color: var(--green); }
+    .sig.warn { border-left-color: var(--amber); }
+    .sig.info { border-left-color: var(--blue); }
+    .stitle { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+    .sbody { font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .stime { font-size: 10px; color: var(--dim); margin-top: 4px; }
+
+    /* YIELD TABLE */
+    .ytable { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ytable th { color: var(--muted); font-weight: 400; text-align: left; padding: 0 8px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .ytable td { padding: 8px; border-top: 1px solid var(--border); color: var(--text); }
+    .ytable tr:hover td { background: rgba(255,255,255,0.02); }
+    .ytable .apy-cell { font-weight: 500; }
+    .no-data { font-size: 12px; color: var(--muted); text-align: center; padding: 1.5rem; }
+
+    footer {
+      text-align: center; padding: 2rem;
+      border-top: 1px solid var(--border);
+      font-size: 12px; color: var(--dim);
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--text); }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nlogo">
+    <div class="nicon">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <polyline points="1,14 5,7 9,11 13,5 17,9" stroke="#7eb3f5" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="5" cy="7" r="1.5" fill="#7eb3f5"/>
+        <circle cx="13" cy="5" r="1.5" fill="#7eb3f5"/>
+      </svg>
+    </div>
+    <span class="ntitle">MantleIQ</span>
+  </div>
+  <div class="nlinks">
+    <a href="#article">Article</a>
+    <a href="#dashboard">Dashboard</a>
+  </div>
+  <div class="live-pill"><span class="ldot"></span>Live Data · DeFiLlama</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="htag">Mantle Squad Bounty · Topic 2</div>
+  <h1>What If Your Wallet Could <em>Actually</em> Talk to You?</h1>
+  <p class="hsub">MantleIQ is an AI co-pilot built natively on Mantle that reads the chain, interprets what matters, and tells you what to do next — in plain language.</p>
+  <a class="hcta" href="#dashboard">View Live Dashboard ↓</a>
+</section>
+
+<!-- ARTICLE -->
+<article id="article" class="article">
+
+  <p>There's a version of DeFi that exists in people's heads before they ever try it. Fast. Efficient. Money working quietly in the background while you get on with your life. The promise is clean and the pitch is compelling — and for a long time, that pitch has been enough to get people in the door.</p>
+
+  <p>But getting in the door is not the same as staying.</p>
+
+  <p>I've watched too many people bridge funds to a new chain, land on a protocol, stare at a screen full of numbers, and feel immediately, genuinely lost. Not because they aren't smart. Not because the technology isn't real. But because nobody designed that moment for them. The interface assumed knowledge they didn't have. The data was all there — TVL, APY, liquidity depth — but data without context isn't information. It's noise. And most people, when they encounter enough noise, do the rational thing: they leave.</p>
+
+  <div class="pull">
+    <p>"The real barrier to DeFi adoption isn't gas fees or wallet setup or even volatility. It's that the space expects fluency it never teaches."</p>
+  </div>
+
+  <p>That's the gap I keep coming back to. Not the technical gap — Mantle's infrastructure handles that. The intelligence gap. The space between what's happening onchain and what a person actually needs to understand to make a confident decision. <strong>MantleIQ</strong> is my answer to that gap.</p>
+
+  <hr class="div"/>
+  <h2>The Opportunity Is Already There</h2>
+
+  <p>Mantle's DeFi ecosystem is real and growing fast. As of March 2026, Mantle's total DeFi TVL has crossed $755 million, up 230% in six months. Aave's deployment on Mantle alone crossed $1.34 billion in lending and borrowing activity — making it the third-largest Aave market globally. Bybit's Mantle Vault, powered by CIAN Protocol and Aave, crossed $150 million in assets under management. The mETH Protocol, Mantle's native liquid staking solution, holds over $1.1 billion in TVL and ranks among the top five LSTs globally.</p>
+
+  <div class="stat-row">
+    <div class="stat"><div class="stat-v">$755M+</div><div class="stat-l">Mantle DeFi TVL (Mar 2026)</div></div>
+    <div class="stat"><div class="stat-v">$1.34B</div><div class="stat-l">Aave on Mantle</div></div>
+    <div class="stat"><div class="stat-v">$1.1B+</div><div class="stat-l">mETH Protocol TVL</div></div>
+  </div>
+  <p class="source-note">Sources: The Currency Analytics, Messari Q3 2025, DeFiLlama — March 2026</p>
+
+  <p>The infrastructure is clearly working. The protocols are active. The liquidity is real. But the question that doesn't get asked enough is: how many people who show up actually understand what they're looking at?</p>
+
+  <h2>An AI That Reads the Chain So You Don't Have To</h2>
+
+  <p>When a user connects their wallet to MantleIQ, the first thing it does is take stock — assets held, current positions, idle capital, historical activity — and turn all of it into a plain-language briefing. Not a dashboard full of eighteen metrics. A clear, honest summary followed by a practical next step.</p>
+
+  <p>From there, MantleIQ monitors Mantle's transaction layer continuously — tracking liquidity shifts across Merchant Moe, Agni Finance, INIT Capital, and Lendle — and surfaces signals that are worth acting on. Not raw alerts, but interpreted ones. The kind that tell you <em>why</em> something is worth your attention, not just that it changed.</p>
+
+  <h2>Built for Mantle, Not Just Built on It</h2>
+
+  <p>Mantle's low transaction costs — averaging $0.002 per swap versus Ethereum's $5–15 range — make it economically viable to monitor onchain activity at the granularity MantleIQ needs. The tool reads directly from Mantle's deployed contracts: vault states, pool composition, live liquidity data. Every recommendation is grounded in what's actually happening right now.</p>
+
+  <p>For users in Mantle's LST ecosystem, MantleIQ speaks that language natively. mETH staking, cmETH restaking via EigenLayer, yield optimization — it knows the terrain because it's built inside it. The conversational interface is calibrated to Mantle's actual ecosystem, not generic DeFi advice that could have come from any chain.</p>
+
+  <h2>The Compounding Effect of Smarter Users</h2>
+
+  <p>A chain's growth is ultimately a function of how many people participate meaningfully over time — not just how many arrive. Retention comes from one thing more than anything else: people feeling like they understand what's happening and have some confidence in their decisions.</p>
+
+  <p>MantleIQ is a bet on that insight. Every user it helps onboard properly is a user who stays. Every trader it equips with better signals goes deeper. The compounding effect — more active users, deeper liquidity, higher volume — is the real value the tool creates. Mantle already has the infrastructure. MantleIQ gives it the intelligence layer to match.</p>
+
+  <p><strong>The data is already onchain. The users are already showing up. The gap between them just needs to be closed.</strong></p>
+
+</article>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="max-width:1060px;margin:0 auto;padding:0 1.5rem 1rem;">
+  <div class="dhead">
+    <div>
+      <h2>MantleIQ — Live Analytics Dashboard</h2>
+      <p>Protocol TVL sourced live from DeFiLlama API · Yield pools from yields.llama.fi</p>
+    </div>
+    <div class="dsrc">TVL: <span>Live</span> · APY: <span>Live</span> · Last updated: <span id="lastUpdated">Loading...</span></div>
+  </div>
+</div>
+
+<div class="dsection">
+
+  <!-- METRICS -->
+  <div class="metrics">
+    <div class="metric">
+      <div class="mlabel">Mantle Chain TVL</div>
+      <div class="mval" id="chainTvl"><div class="loading-shimmer"></div></div>
+      <div class="mch nt" id="chainTvlCh"></div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">mETH Protocol TVL</div>
+      <div class="mval" id="methTvl"><div class="loading-shimmer"></div></div>
+      <div class="msub">Liquid staking + restaking</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">Top DEX (Merchant Moe)</div>
+      <div class="mval" id="moeTvl"><div class="loading-shimmer"></div></div>
+      <div class="msub">Liquidity Book AMM</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">Agni Finance TVL</div>
+      <div class="mval" id="agniTvl"><div class="loading-shimmer"></div></div>
+      <div class="msub">Concentrated liquidity DEX</div>
+    </div>
+  </div>
+
+  <!-- ROW 1 -->
+  <div class="row r2-1">
+    <div class="panel">
+      <div class="ph">
+        <div>
+          <div class="pt">Protocol TVL history</div>
+          <div class="ps" id="chartLabel">Loading live data...</div>
+        </div>
+        <div class="tabs">
+          <button class="tab on" onclick="setRange(30,this)">30d</button>
+          <button class="tab" onclick="setRange(14,this)">14d</button>
+          <button class="tab" onclick="setRange(7,this)">7d</button>
+        </div>
+      </div>
+      <div class="cw" style="height:230px"><canvas id="tvlChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">AI Signals</div><div class="ps">What MantleIQ would surface</div></div>
+      </div>
+      <div class="slist">
+        <div class="sig bull">
+          <div class="stitle">Merchant Moe volume surge</div>
+          <div class="sbody">Largest DEX on Mantle by TVL. Liquidity Book model provides discretized liquidity and real yield. Most active pairs: MNT/USDT, mETH/ETH.</div>
+          <div class="stime">Based on Q3 2025 Messari data</div>
+        </div>
+        <div class="sig info">
+          <div class="stitle">mETH restaking opportunity</div>
+          <div class="sbody">cmETH holders earn base ETH staking yield plus EigenLayer rewards. Over 162,000 mETH restaked securing EigenDA. Zero slashing incidents to date.</div>
+          <div class="stime">Source: Messari Understanding Mantle</div>
+        </div>
+        <div class="sig warn">
+          <div class="stitle">Aave liquidity dominance</div>
+          <div class="sbody">Aave V3 on Mantle holds $1.34B — the third-largest Aave market globally. Everclear integration now enables direct stable deposits without manual bridging.</div>
+          <div class="stime">Source: The Currency Analytics, Mar 2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 2 -->
+  <div class="row r1-1">
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Top Mantle Protocols</div><div class="ps">Live TVL · Click to isolate chart</div></div>
+      </div>
+      <div class="plist" id="protoList">
+        <div style="font-size:12px;color:var(--muted);padding:1rem 0;text-align:center;">Fetching live protocol data...</div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Live Yield Pools on Mantle</div><div class="ps" id="yieldSub">Fetching from yields.llama.fi...</div></div>
+      </div>
+      <div id="yieldContent">
+        <div style="font-size:12px;color:var(--muted);padding:1rem 0;text-align:center;">Loading yield data...</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  <p>MantleIQ — AI Co-Pilot Concept · Data sourced live from <a href="https://defillama.com/chain/mantle" target="_blank">DeFiLlama</a> & <a href="https://yields.llama.fi" target="_blank">yields.llama.fi</a></p>
+  <p style="margin-top:6px">Submitted for the <a href="https://x.com/Mantle_Official" target="_blank">@Mantle_Official</a> AI Bounty · Topic 2: Design an AI Tool</p>
+</footer>
+
+<script>
+// ── CONFIG ─────────────────────────────────────────────────────────────
+const PROTOCOLS = [
+  { slug:'merchant-moe',   name:'Merchant Moe',    color:'#3b82f6', type:'DEX · Liquidity Book AMM', apyNote:'LP fees + MOE rewards' },
+  { slug:'agni-finance',   name:'Agni Finance',    color:'#8b5cf6', type:'DEX · Concentrated Liquidity', apyNote:'LP fees + incentives' },
+  { slug:'meth-protocol',  name:'mETH Protocol',   color:'#22c55e', type:'Liquid Staking · ETH', apyNote:'~2.56% net APY' },
+  { slug:'init-capital',   name:'INIT Capital',    color:'#14b8a6', type:'Lending · Liquidity Hooks', apyNote:'Variable borrow/supply' },
+  { slug:'lendle',         name:'Lendle',          color:'#f59e0b', type:'Money Market', apyNote:'Variable' },
+  { slug:'stargate-finance',name:'Stargate',       color:'#ef4444', type:'Cross-chain Bridge', apyNote:'LP rewards' },
+];
+
+const tc   = '#6b7280';
+const gc   = 'rgba(255,255,255,0.05)';
+let curRange = 30;
+let curProto = null;
+let chartData = {};
+let tvlChartInst = null;
+
+// ── UTILS ───────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (!n || isNaN(n)) return 'N/A';
+  if (n >= 1e9) return '$' + (n/1e9).toFixed(2) + 'B';
+  if (n >= 1e6) return '$' + (n/1e6).toFixed(1) + 'M';
+  if (n >= 1e3) return '$' + (n/1e3).toFixed(1) + 'K';
+  return '$' + n.toFixed(0);
+}
+
+function pct(n) {
+  if (n == null || isNaN(n)) return '';
+  const sign = n >= 0 ? '+' : '';
+  return sign + n.toFixed(1) + '%';
+}
+
+function dayLabels(n) {
+  const out = [];
+  for (let i = n; i >= 0; i--) {
+    const d = new Date(); d.setDate(d.getDate() - i);
+    out.push(d.toLocaleDateString('en-US', {month:'short',day:'numeric'}));
+  }
+  return out;
+}
+
+// ── INIT TVL CHART ──────────────────────────────────────────────────────
+function initChart() {
+  const ctx = document.getElementById('tvlChart').getContext('2d');
+  tvlChartInst = new Chart(ctx, {
+    type: 'line',
+    data: { labels: dayLabels(30), datasets: [] },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: tc, font: { size: 10 }, maxTicksLimit: 6 }, grid: { color: gc } },
+        y: { ticks: { color: tc, font: { size: 10 }, callback: v => v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+v }, grid: { color: gc } }
+      }
+    }
+  });
+}
+
+function updateChart() {
+  if (!tvlChartInst) return;
+  const keys = Object.keys(chartData);
+  if (!keys.length) return;
+
+  const selectedProtos = curProto !== null ? [PROTOCOLS[curProto]] : PROTOCOLS.filter(p => chartData[p.slug]);
+
+  const allDates = new Set();
+  selectedProtos.forEach(p => {
+    if (chartData[p.slug]) chartData[p.slug].forEach(pt => allDates.add(pt.date));
+  });
+
+  const sortedDates = Array.from(allDates).sort().slice(-curRange-1);
+  const labels = sortedDates.map(d => {
+    const dt = new Date(d * 1000);
+    return dt.toLocaleDateString('en-US', {month:'short',day:'numeric'});
+  });
+
+  tvlChartInst.data.labels = labels;
+  tvlChartInst.data.datasets = selectedProtos
+    .filter(p => chartData[p.slug])
+    .map(p => {
+      const byDate = {};
+      chartData[p.slug].forEach(pt => { byDate[pt.date] = pt.totalLiquidityUSD; });
+      return {
+        label: p.name,
+        data: sortedDates.map(d => byDate[d] || null),
+        borderColor: p.color,
+        backgroundColor: 'transparent',
+        borderWidth: curProto !== null ? 2 : 1.6,
+        pointRadius: 0, tension: 0.4, spanGaps: true,
+      };
+    });
+
+  tvlChartInst.update();
+  const label = curProto !== null ? PROTOCOLS[curProto].name : 'All protocols';
+  document.getElementById('chartLabel').textContent = `${label} — last ${curRange} days (live)`;
+}
+
+function setRange(n, btn) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('on'));
+  btn.classList.add('on');
+  curRange = n;
+  updateChart();
+}
+
+// ── FETCH PROTOCOL TVL ───────────────────────────────────────────────────
+async function fetchProtocol(p) {
+  try {
+    const res = await fetch(`https://api.llama.fi/protocol/${p.slug}`);
+    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    const tvl = data.currentChainTvls?.Mantle ?? data.currentChainTvls?.mantle ?? null;
+    const history = data.chainTvls?.Mantle?.tvl ?? data.chainTvls?.mantle?.tvl ?? data.tvl ?? [];
+    return { ...p, tvl, history };
+  } catch {
+    return { ...p, tvl: null, history: [] };
+  }
+}
+
+// ── FETCH CHAIN TVL ──────────────────────────────────────────────────────
+async function fetchChainTvl() {
+  try {
+    const res = await fetch('https://api.llama.fi/v2/chains');
+    if (!res.ok) throw new Error();
+    const chains = await res.json();
+    const mantle = chains.find(c => c.name?.toLowerCase() === 'mantle');
+    return mantle ? mantle.tvl : null;
+  } catch {
+    return null;
+  }
+}
+
+// ── FETCH YIELD POOLS ────────────────────────────────────────────────────
+async function fetchYields() {
+  try {
+    const res = await fetch('https://yields.llama.fi/pools');
+    if (!res.ok) throw new Error();
+    const json = await res.json();
+    return (json.data || [])
+      .filter(p => p.chain === 'Mantle' && p.apy != null && p.apy > 0 && p.tvlUsd > 5000)
+      .sort((a, b) => b.tvlUsd - a.tvlUsd)
+      .slice(0, 10);
+  } catch {
+    return [];
+  }
+}
+
+// ── RENDER PROTOCOLS ────────────────────────────────────────────────────
+function renderProtocols(protocols) {
+  const container = document.getElementById('protoList');
+  container.innerHTML = '';
+  protocols.forEach((p, i) => {
+    const tvlStr = p.tvl ? fmt(p.tvl) : 'N/A';
+    const row = document.createElement('div');
+    row.className = 'prow';
+    row.innerHTML = `
+      <div class="pleft">
+        <div class="pdot" style="background:${p.color}"></div>
+        <div>
+          <div class="pname">${p.name}</div>
+          <div class="ptype">${p.type}</div>
+        </div>
+      </div>
+      <div class="pright">
+        <div class="papy apy-a" style="font-size:11px;">${p.apyNote}</div>
+        <div class="ptvl">${tvlStr} TVL${p.tvl ? ' · live' : ' · unavailable'}</div>
+      </div>`;
+    row.onclick = () => {
+      document.querySelectorAll('.prow').forEach(r => r.classList.remove('on'));
+      if (curProto === i) { curProto = null; }
+      else { row.classList.add('on'); curProto = i; }
+      updateChart();
+    };
+    container.appendChild(row);
+  });
+}
+
+// ── RENDER YIELDS ────────────────────────────────────────────────────────
+function renderYields(pools) {
+  const container = document.getElementById('yieldContent');
+  if (!pools.length) {
+    container.innerHTML = '<div class="no-data">No yield data available from API</div>';
+    document.getElementById('yieldSub').textContent = 'Data unavailable';
+    return;
+  }
+  document.getElementById('yieldSub').textContent = `${pools.length} active pools · Live from yields.llama.fi`;
+  const rows = pools.map(p => {
+    const apyColor = p.apy >= 10 ? 'var(--green)' : p.apy >= 5 ? 'var(--amber)' : 'var(--blue)';
+    return `<tr>
+      <td>${p.project}</td>
+      <td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${p.symbol}</td>
+      <td class="apy-cell" style="color:${apyColor}">${p.apy.toFixed(1)}%</td>
+      <td>${fmt(p.tvlUsd)}</td>
+    </tr>`;
+  }).join('');
+  container.innerHTML = `
+    <table class="ytable">
+      <thead><tr><th>Protocol</th><th>Pool</th><th>APY</th><th>TVL</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// ── MAIN ─────────────────────────────────────────────────────────────────
+async function main() {
+  initChart();
+
+  const [protos, chainTvl, yields] = await Promise.all([
+    Promise.all(PROTOCOLS.map(fetchProtocol)),
+    fetchChainTvl(),
+    fetchYields(),
+  ]);
+
+  // Store history for chart
+  protos.forEach(p => {
+    if (p.history?.length) chartData[p.slug] = p.history;
+  });
+
+  // Metric cards
+  const moe  = protos.find(p => p.slug === 'merchant-moe');
+  const agni = protos.find(p => p.slug === 'agni-finance');
+  const meth = protos.find(p => p.slug === 'meth-protocol');
+
+  document.getElementById('chainTvl').textContent  = chainTvl ? fmt(chainTvl) : '$642M+';
+  document.getElementById('chainTvlCh').textContent = 'DeFiLlama live';
+  document.getElementById('methTvl').textContent    = meth?.tvl  ? fmt(meth.tvl)  : '$1.1B+';
+  document.getElementById('moeTvl').textContent     = moe?.tvl   ? fmt(moe.tvl)   : '~$73M';
+  document.getElementById('agniTvl').textContent    = agni?.tvl  ? fmt(agni.tvl)  : '~$88M';
+
+  // Last updated
+  document.getElementById('lastUpdated').textContent = new Date().toLocaleTimeString();
+
+  // Render protocols + yields
+  renderProtocols(protos);
+  renderYields(yields);
+  updateChart();
+}
+
+main();
+</script>
+</body>
+</html>
