@@ -1,0 +1,835 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>MantleIQ — AI Co-Pilot for Mantle</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── MANTLE BRAND COLORS ── */
+    :root {
+      --bg:        #0B0E17;   /* Mantle dark background */
+      --bg2:       #111520;   /* Panel background */
+      --bg3:       #181D2E;   /* Card background */
+      --bg4:       #1E2438;   /* Hover state */
+      --border:    rgba(255,255,255,0.07);
+      --border2:   rgba(255,255,255,0.14);
+      --border-g:  rgba(0,209,191,0.25);  /* Mantle green border */
+      --text:      #FFFFFF;
+      --muted:     #8B95A9;
+      --dim:       #3D4560;
+      --green:     #00D1BF;   /* Mantle primary teal-green */
+      --green2:    #00B5A5;   /* Mantle green darker */
+      --green-bg:  rgba(0,209,191,0.08);
+      --green-glow:rgba(0,209,191,0.15);
+      --amber:     #F5A623;
+      --red:       #F04F4F;
+      --blue:      #4B8EF5;
+      --purple:    #9B7FE8;
+      --grid:      rgba(255,255,255,0.04);
+      --r:10px; --rs:6px;
+    }
+
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      min-height: 100vh;
+    }
+
+    /* ── NAV ── */
+    nav {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(11,14,23,0.96);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+      padding: 0 2rem;
+      display: flex; align-items: center;
+      justify-content: space-between; height: 56px;
+    }
+    .nlogo { display: flex; align-items: center; gap: 10px; }
+    .nicon {
+      width: 32px; height: 32px;
+      background: var(--green-bg);
+      border: 1px solid var(--border-g);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .ntitle { font-size: 15px; font-weight: 500; color: var(--text); }
+    .ntitle span { color: var(--green); }
+    .ntabs { display: flex; gap: 4px; }
+    .ntab {
+      font-size: 12px; padding: 5px 14px; border-radius: 20px;
+      border: 1px solid var(--border); cursor: pointer;
+      color: var(--muted); background: transparent;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .ntab:hover { border-color: var(--border2); color: var(--text); }
+    .ntab.on { background: var(--green); color: #000; border-color: var(--green); font-weight: 500; }
+    .live-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--green);
+      border: 1px solid var(--border-g);
+      border-radius: 20px; padding: 4px 12px;
+      background: var(--green-bg);
+    }
+    .ldot { width: 6px; height: 6px; border-radius: 50%; background: var(--green); animation: blink 2s infinite; }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0.2} }
+
+    /* ── VIEWS ── */
+    .view { display: none; max-width: 1060px; margin: 0 auto; padding: 1.5rem; }
+    .view.active { display: block; }
+
+    /* ── METRICS ── */
+    .metrics { display: grid; grid-template-columns: repeat(4,1fr); gap: 10px; margin-bottom: 12px; }
+    @media(max-width:700px){ .metrics { grid-template-columns: repeat(2,1fr); } }
+    .metric {
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1rem 1.2rem;
+      transition: border-color 0.2s;
+    }
+    .metric:hover { border-color: var(--border-g); }
+    .mlabel { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+    .mval { font-size: 21px; font-weight: 500; letter-spacing: -0.5px; color: var(--text); }
+    .mch { font-size: 12px; margin-top: 5px; }
+    .up { color: var(--green); }
+    .dn { color: var(--red); }
+    .nt { color: var(--muted); }
+    .shimmer {
+      background: linear-gradient(90deg, var(--bg3) 25%, var(--bg4) 50%, var(--bg3) 75%);
+      background-size: 200% 100%; animation: sh 1.5s infinite;
+      border-radius: 4px; height: 1.3em; width: 70%;
+    }
+    @keyframes sh { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── PANELS ── */
+    .row  { display: grid; gap: 12px; margin-bottom: 12px; }
+    .r2-1 { grid-template-columns: 1.6fr 1fr; }
+    .r1-1 { grid-template-columns: 1fr 1fr; }
+    @media(max-width:820px){ .r2-1, .r1-1 { grid-template-columns: 1fr; } }
+    .panel {
+      background: var(--bg2);
+      border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1.2rem;
+    }
+    .ph { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 1rem; }
+    .pt { font-size: 13px; font-weight: 500; color: var(--text); }
+    .ps { font-size: 11px; color: var(--muted); margin-top: 3px; }
+
+    .tabs { display: flex; gap: 5px; }
+    .tab {
+      font-size: 11px; padding: 4px 10px; border-radius: 20px;
+      border: 1px solid var(--border); cursor: pointer;
+      color: var(--muted); background: transparent;
+      font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .tab:hover { border-color: var(--border2); color: var(--text); }
+    .tab.on { background: var(--green); color: #000; border-color: var(--green); font-weight: 500; }
+    .cw { position: relative; width: 100%; }
+
+    /* ── PROTOCOLS ── */
+    .plist { display: flex; flex-direction: column; gap: 6px; }
+    .prow {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 9px 11px; border-radius: var(--rs);
+      border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
+    }
+    .prow:hover { border-color: var(--border2); background: rgba(255,255,255,0.02); }
+    .prow.on { border-color: var(--green); background: var(--green-bg); }
+    .pleft { display: flex; align-items: center; gap: 10px; }
+    .pdot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pname { font-size: 13px; font-weight: 500; color: var(--text); }
+    .ptype { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .pright { text-align: right; flex-shrink: 0; }
+    .papy { font-size: 12px; font-weight: 500; }
+    .apy-g { color: var(--green); }
+    .apy-a { color: var(--amber); }
+    .apy-b { color: var(--blue); }
+    .ptvl { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+    /* ── SIGNALS ── */
+    .slist { display: flex; flex-direction: column; gap: 8px; }
+    .sig {
+      padding: 9px 11px; border-radius: var(--rs);
+      background: rgba(255,255,255,0.02);
+      border: 1px solid var(--border); border-left-width: 3px;
+    }
+    .sig.bull { border-left-color: var(--green); }
+    .sig.warn { border-left-color: var(--amber); }
+    .sig.info { border-left-color: var(--blue); }
+    .stitle { font-size: 12px; font-weight: 500; color: var(--text); margin-bottom: 3px; }
+    .sbody  { font-size: 11px; color: var(--muted); line-height: 1.55; }
+    .stime  { font-size: 10px; color: var(--dim); margin-top: 4px; }
+
+    /* ── YIELD TABLE ── */
+    .ytable { width: 100%; border-collapse: collapse; font-size: 12px; }
+    .ytable th { color: var(--muted); font-weight: 400; text-align: left; padding: 0 8px 8px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .ytable td { padding: 8px; border-top: 1px solid var(--border); color: var(--text); }
+    .ytable tr:hover td { background: rgba(255,255,255,0.02); }
+    .no-data { font-size: 12px; color: var(--muted); text-align: center; padding: 1.5rem 0; }
+
+    /* ── WALLET VIEW ── */
+    .wallet-banner {
+      background: var(--bg3); border: 1px solid var(--border-g);
+      border-radius: var(--r); padding: 1.5rem; margin-bottom: 12px;
+      display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 1rem;
+    }
+    .wb-left h3 { font-size: 16px; font-weight: 500; margin-bottom: 4px; color: var(--text); }
+    .wb-left p  { font-size: 13px; color: var(--muted); }
+    .wb-addr {
+      font-size: 12px; font-family: monospace; color: var(--green);
+      background: var(--green-bg); border: 1px solid var(--border-g);
+      border-radius: var(--rs); padding: 6px 12px;
+    }
+    .wallet-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin-bottom: 12px; }
+    @media(max-width:600px){ .wallet-grid { grid-template-columns: 1fr 1fr; } }
+    .wcard {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 1rem;
+    }
+    .wcard-label { font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+    .wcard-val { font-size: 20px; font-weight: 500; color: var(--text); }
+    .wcard-sub { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+    .briefing {
+      background: var(--bg2); border: 1px solid var(--border-g);
+      border-radius: var(--r); padding: 1.25rem; margin-bottom: 12px;
+    }
+    .briefing-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .briefing-icon {
+      width: 28px; height: 28px; background: var(--green-bg);
+      border: 1px solid var(--border-g);
+      border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .briefing-head span { font-size: 13px; font-weight: 500; color: var(--green); }
+    .briefing p { font-size: 13px; color: #c9d1d9; line-height: 1.7; margin-bottom: 8px; }
+    .briefing p:last-child { margin-bottom: 0; }
+    .briefing strong { color: var(--text); }
+
+    .action-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+    .action-btn {
+      font-size: 12px; padding: 7px 14px; border-radius: var(--rs);
+      border: 1px solid var(--border2); cursor: pointer; color: var(--text);
+      background: transparent; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .action-btn:hover { background: var(--bg4); border-color: var(--green); color: var(--green); }
+    .action-btn.primary { background: var(--green); border-color: var(--green); color: #000; font-weight: 500; }
+    .action-btn.primary:hover { background: var(--green2); }
+
+    .pos-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    .pos-table th { color: var(--muted); font-weight: 400; font-size: 11px; text-align: left; padding: 0 10px 10px; text-transform: uppercase; letter-spacing: 0.4px; }
+    .pos-table td { padding: 10px; border-top: 1px solid var(--border); color: var(--text); }
+    .pos-table tr:hover td { background: rgba(255,255,255,0.02); }
+    .pos-badge { font-size: 10px; padding: 2px 7px; border-radius: 8px; margin-left: 6px; }
+    .pb-earn { background: var(--green-bg); color: var(--green); }
+    .pb-idle { background: rgba(240,79,79,0.1); color: var(--red); }
+
+    /* ── ONBOARDING VIEW ── */
+    .ob-progress { display: flex; align-items: center; margin-bottom: 2rem; }
+    .ob-step { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .ob-step:last-child { flex: 0; }
+    .ob-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 500; flex-shrink: 0;
+      border: 1px solid var(--border); color: var(--muted); background: var(--bg3);
+      transition: all 0.3s;
+    }
+    .ob-num.done   { background: var(--green); border-color: var(--green); color: #000; }
+    .ob-num.active { border-color: var(--green); color: var(--green); background: var(--green-bg); }
+    .ob-line { flex: 1; height: 1px; background: var(--border); margin: 0 4px; }
+    .ob-line.done { background: var(--green); }
+    .ob-label { font-size: 11px; color: var(--muted); white-space: nowrap; }
+    .ob-screen { display: none; }
+    .ob-screen.active { display: block; }
+    .ob-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--r); padding: 2rem; max-width: 600px; margin: 0 auto;
+    }
+    .ob-card h3 { font-size: 18px; font-weight: 500; margin-bottom: 8px; color: var(--text); }
+    .ob-card p  { font-size: 14px; color: var(--muted); margin-bottom: 1.5rem; line-height: 1.6; }
+    .ob-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 1.5rem; }
+    .ob-opt {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 16px; border-radius: var(--rs);
+      border: 1px solid var(--border); cursor: pointer; transition: all 0.15s;
+    }
+    .ob-opt:hover { border-color: var(--border2); background: rgba(255,255,255,0.02); }
+    .ob-opt.selected { border-color: var(--green); background: var(--green-bg); }
+    .ob-opt-icon  { font-size: 20px; }
+    .ob-opt-label { font-size: 13px; font-weight: 500; color: var(--text); }
+    .ob-opt-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .ob-result {
+      background: var(--green-bg); border: 1px solid var(--border-g);
+      border-radius: var(--r); padding: 1.25rem; margin-top: 1rem;
+    }
+    .ob-result h4 { font-size: 14px; font-weight: 500; color: var(--green); margin-bottom: 8px; }
+    .ob-result p  { font-size: 13px; color: #c9d1d9; line-height: 1.65; margin-bottom: 6px; }
+    .ob-result p:last-child { margin-bottom: 0; }
+    .ob-nav { display: flex; gap: 8px; justify-content: flex-end; margin-top: 1.5rem; }
+
+    /* ── CHAT VIEW ── */
+    .chat-wrap {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: var(--r); display: flex; flex-direction: column; height: 520px;
+    }
+    .chat-head {
+      padding: 1rem 1.25rem; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px;
+    }
+    .chat-head-icon {
+      width: 32px; height: 32px; background: var(--green-bg);
+      border: 1px solid var(--border-g);
+      border-radius: 8px; display: flex; align-items: center; justify-content: center;
+    }
+    .chat-head-label { font-size: 13px; font-weight: 500; color: var(--text); }
+    .chat-head-sub   { font-size: 11px; color: var(--muted); margin-top: 2px; }
+    .chat-messages { flex: 1; overflow-y: auto; padding: 1.25rem; display: flex; flex-direction: column; gap: 12px; }
+    .chat-messages::-webkit-scrollbar { width: 4px; }
+    .chat-messages::-webkit-scrollbar-track { background: transparent; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--dim); border-radius: 2px; }
+    .msg { display: flex; gap: 10px; max-width: 85%; }
+    .msg.user { align-self: flex-end; flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 500;
+    }
+    .msg.ai .msg-avatar   { background: var(--green-bg); color: var(--green); border: 1px solid var(--border-g); }
+    .msg.user .msg-avatar { background: var(--green); color: #000; }
+    .msg-bubble { padding: 9px 13px; border-radius: 10px; font-size: 13px; line-height: 1.6; }
+    .msg.ai .msg-bubble   { background: var(--bg3); color: var(--text); border: 1px solid var(--border); border-radius: 2px 10px 10px 10px; }
+    .msg.user .msg-bubble { background: var(--green); color: #000; border-radius: 10px 2px 10px 10px; }
+    .msg-bubble strong { font-weight: 500; }
+    .msg-bubble ul { padding-left: 1rem; margin-top: 4px; }
+    .msg-bubble li { margin-bottom: 3px; }
+    .typing { display: flex; gap: 4px; align-items: center; padding: 9px 13px; }
+    .typing span { width: 6px; height: 6px; background: var(--green); border-radius: 50%; animation: dot 1.4s infinite; opacity: 0.5; }
+    .typing span:nth-child(2) { animation-delay: 0.2s; }
+    .typing span:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes dot { 0%,80%,100%{opacity:0.3;transform:scale(1)} 40%{opacity:1;transform:scale(1.2)} }
+    .chat-suggestions { padding: 0 1.25rem 1rem; display: flex; gap: 6px; flex-wrap: wrap; }
+    .chat-sugg {
+      font-size: 11px; padding: 5px 10px; border-radius: 20px;
+      border: 1px solid var(--border); cursor: pointer; color: var(--muted);
+      background: transparent; font-family: 'DM Sans', sans-serif; transition: all 0.15s;
+    }
+    .chat-sugg:hover { border-color: var(--green); color: var(--green); }
+    .chat-input-row { padding: 1rem 1.25rem; border-top: 1px solid var(--border); display: flex; gap: 8px; align-items: center; }
+    .chat-input {
+      flex: 1; background: var(--bg3); border: 1px solid var(--border);
+      border-radius: var(--rs); padding: 9px 14px; font-size: 13px;
+      color: var(--text); font-family: 'DM Sans', sans-serif; outline: none; transition: border-color 0.15s;
+    }
+    .chat-input:focus { border-color: var(--green); }
+    .chat-input::placeholder { color: var(--dim); }
+    .chat-send {
+      background: var(--green); color: #000; border: none;
+      border-radius: var(--rs); padding: 9px 16px; font-size: 13px; font-weight: 500;
+      cursor: pointer; font-family: 'DM Sans', sans-serif; transition: background 0.15s;
+    }
+    .chat-send:hover { background: var(--green2); }
+
+    /* ── FOOTER ── */
+    footer {
+      text-align: center; padding: 2rem;
+      border-top: 1px solid var(--border);
+      font-size: 11px; color: var(--dim);
+    }
+    footer a { color: var(--muted); text-decoration: none; }
+    footer a:hover { color: var(--green); }
+    .footer-credit { color: var(--green); font-weight: 500; }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nlogo">
+    <div class="nicon">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <polyline points="1,14 5,7 9,11 13,5 17,9" stroke="#00D1BF" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="5" cy="7" r="1.5" fill="#00D1BF"/>
+        <circle cx="13" cy="5" r="1.5" fill="#00D1BF"/>
+      </svg>
+    </div>
+    <span class="ntitle">Mantle<span>IQ</span></span>
+  </div>
+  <div class="ntabs">
+    <button class="ntab on" onclick="switchView('analytics',this)">Analytics</button>
+    <button class="ntab"    onclick="switchView('wallet',this)">Wallet</button>
+    <button class="ntab"    onclick="switchView('onboarding',this)">Onboarding</button>
+    <button class="ntab"    onclick="switchView('chat',this)">AI Chat</button>
+  </div>
+  <div class="live-pill"><span class="ldot"></span>DeFiLlama · Live</div>
+</nav>
+
+<!-- ════════════ ANALYTICS ════════════ -->
+<div id="view-analytics" class="view active">
+  <div class="metrics">
+    <div class="metric">
+      <div class="mlabel">Mantle Chain TVL</div>
+      <div class="mval" id="chainTvl"><div class="shimmer"></div></div>
+      <div class="mch nt">DeFiLlama · live</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">mETH Protocol</div>
+      <div class="mval" id="methTvl"><div class="shimmer"></div></div>
+      <div class="mch nt">Liquid staking + restaking</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">Merchant Moe TVL</div>
+      <div class="mval" id="moeTvl"><div class="shimmer"></div></div>
+      <div class="mch nt">Largest DEX on Mantle</div>
+    </div>
+    <div class="metric">
+      <div class="mlabel">Agni Finance TVL</div>
+      <div class="mval" id="agniTvl"><div class="shimmer"></div></div>
+      <div class="mch nt">Conc. liquidity DEX</div>
+    </div>
+  </div>
+
+  <div class="row r2-1">
+    <div class="panel">
+      <div class="ph">
+        <div>
+          <div class="pt">Protocol TVL history</div>
+          <div class="ps" id="chartLabel">Loading live data...</div>
+        </div>
+        <div class="tabs">
+          <button class="tab on" onclick="setRange(30,this)">30d</button>
+          <button class="tab"    onclick="setRange(14,this)">14d</button>
+          <button class="tab"    onclick="setRange(7,this)">7d</button>
+        </div>
+      </div>
+      <div class="cw" style="height:230px"><canvas id="tvlChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">AI Signals</div><div class="ps">What MantleIQ would surface</div></div>
+      </div>
+      <div class="slist">
+        <div class="sig bull">
+          <div class="stitle">Merchant Moe volume surge</div>
+          <div class="sbody">Largest DEX on Mantle by TVL. Liquidity Book model provides concentrated real yield. Most active pairs: MNT/USDT, mETH/ETH.</div>
+          <div class="stime">Source: Messari Q3 2025</div>
+        </div>
+        <div class="sig info">
+          <div class="stitle">mETH restaking window</div>
+          <div class="sbody">cmETH earns base ETH yield + EigenLayer rewards. 162k+ mETH restaked securing EigenDA. Zero slashing incidents to date.</div>
+          <div class="stime">Source: Messari Understanding Mantle</div>
+        </div>
+        <div class="sig warn">
+          <div class="stitle">Aave V3 market update</div>
+          <div class="sbody">Aave on Mantle at $1.34B — third-largest Aave market globally. Everclear integration enables direct stable deposits without bridging.</div>
+          <div class="stime">Source: The Currency Analytics, Mar 2026</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row r1-1">
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Top Mantle Protocols</div><div class="ps">Live TVL · Click to isolate</div></div>
+      </div>
+      <div class="plist" id="protoList"><div class="no-data">Fetching live data...</div></div>
+    </div>
+    <div class="panel">
+      <div class="ph">
+        <div><div class="pt">Live Yield Pools</div><div class="ps" id="yieldSub">Fetching from yields.llama.fi...</div></div>
+      </div>
+      <div id="yieldContent"><div class="no-data">Loading...</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ WALLET ════════════ -->
+<div id="view-wallet" class="view">
+  <div class="wallet-banner">
+    <div class="wb-left">
+      <h3>Wallet Briefing</h3>
+      <p>MantleIQ read your wallet and translated the data into plain language.</p>
+    </div>
+    <div class="wb-addr">0x3f4a...b92c</div>
+  </div>
+
+  <div class="briefing">
+    <div class="briefing-head">
+      <div class="briefing-icon">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+          <circle cx="7" cy="7" r="6" stroke="#00D1BF" stroke-width="1.2"/>
+          <path d="M7 4.5v3.5M7 9.5v.5" stroke="#00D1BF" stroke-width="1.3" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span>MantleIQ Briefing · Right now</span>
+    </div>
+    <p>You're holding <strong>$2,140 in USDC</strong> that hasn't moved in 18 days. At current rates on Mantle, that capital could be earning <strong>5–8% APY</strong> in stable pools on Merchant Moe or Agni Finance — that's roughly <strong>$107–$171 per year</strong> sitting idle right now.</p>
+    <p>Your mETH position ($980) is earning base staking yield but you haven't activated restaking via cmETH. Doing so would layer EigenLayer rewards on top of what you're already earning with no additional capital required.</p>
+    <p>Your MNT holdings are undeployed. Current staking APY sits in the <strong>4–8% range</strong> depending on network activity this week.</p>
+    <div class="action-row">
+      <button class="action-btn primary">Put USDC to work →</button>
+      <button class="action-btn">Enable cmETH restaking</button>
+      <button class="action-btn">Stake MNT</button>
+    </div>
+  </div>
+
+  <div class="wallet-grid">
+    <div class="wcard">
+      <div class="wcard-label">Total Balance</div>
+      <div class="wcard-val">$4,820</div>
+      <div class="wcard-sub">Across 4 assets</div>
+    </div>
+    <div class="wcard">
+      <div class="wcard-label">Actively Earning</div>
+      <div class="wcard-val" style="color:var(--amber)">$2,680</div>
+      <div class="wcard-sub">55% of portfolio</div>
+    </div>
+    <div class="wcard">
+      <div class="wcard-label">Idle Capital</div>
+      <div class="wcard-val" style="color:var(--red)">$2,140</div>
+      <div class="wcard-sub">Could earn ~$140/yr</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="ph">
+      <div><div class="pt">Current Positions</div><div class="ps">What MantleIQ sees in your wallet</div></div>
+    </div>
+    <table class="pos-table">
+      <thead><tr><th>Asset</th><th>Balance</th><th>Value</th><th>Status</th><th>Est. APY</th></tr></thead>
+      <tbody>
+        <tr><td>USDC</td><td>2,140 USDC</td><td>$2,140</td><td><span class="pos-badge pb-idle">Idle</span></td><td style="color:var(--red)">0%</td></tr>
+        <tr><td>mETH</td><td>0.412 mETH</td><td>$980</td><td><span class="pos-badge pb-earn">Staking</span></td><td style="color:var(--green)">~2.56%</td></tr>
+        <tr><td>MNT</td><td>840 MNT</td><td>$1,260</td><td><span class="pos-badge pb-idle">Idle</span></td><td style="color:var(--red)">0%</td></tr>
+        <tr><td>ETH</td><td>0.19 ETH</td><td>$440</td><td><span class="pos-badge pb-earn">In LP</span></td><td style="color:var(--green)">~6.2%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ════════════ ONBOARDING ════════════ -->
+<div id="view-onboarding" class="view">
+  <div class="ob-progress">
+    <div class="ob-step"><div class="ob-num active" id="obn1">1</div><div class="ob-label">Experience</div></div>
+    <div class="ob-line" id="obl1"></div>
+    <div class="ob-step"><div class="ob-num" id="obn2">2</div><div class="ob-label">Goals</div></div>
+    <div class="ob-line" id="obl2"></div>
+    <div class="ob-step"><div class="ob-num" id="obn3">3</div><div class="ob-label">Risk</div></div>
+    <div class="ob-line" id="obl3"></div>
+    <div class="ob-step"><div class="ob-num" id="obn4">4</div><div class="ob-label">Your Path</div></div>
+  </div>
+
+  <div class="ob-screen active" id="obs1">
+    <div class="ob-card">
+      <h3>Welcome to MantleIQ</h3>
+      <p>Before I build your path through Mantle, tell me where you're starting from.</p>
+      <div class="ob-options">
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">🌱</div><div><div class="ob-opt-label">New to DeFi</div><div class="ob-opt-sub">First time using a DEX or yield protocol</div></div></div>
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">⚡</div><div><div class="ob-opt-label">Some experience</div><div class="ob-opt-sub">I've used DeFi before, just new to Mantle</div></div></div>
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">🔥</div><div><div class="ob-opt-label">Experienced</div><div class="ob-opt-sub">Active DeFi user, looking for Mantle-specific edge</div></div></div>
+      </div>
+      <div class="ob-nav"><button class="action-btn primary" onclick="obNext(2)">Next →</button></div>
+    </div>
+  </div>
+
+  <div class="ob-screen" id="obs2">
+    <div class="ob-card">
+      <h3>What are you here for?</h3>
+      <p>This shapes which Mantle protocols MantleIQ will prioritize for you.</p>
+      <div class="ob-options">
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">💰</div><div><div class="ob-opt-label">Earn yield on idle capital</div><div class="ob-opt-sub">Stablecoin or LST strategies</div></div></div>
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">📈</div><div><div class="ob-opt-label">Active trading</div><div class="ob-opt-sub">Swaps, LP, market making</div></div></div>
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">🔒</div><div><div class="ob-opt-label">Stake and hold</div><div class="ob-opt-sub">mETH, MNT staking, long-term</div></div></div>
+      </div>
+      <div class="ob-nav">
+        <button class="action-btn" onclick="obNext(1)">← Back</button>
+        <button class="action-btn primary" onclick="obNext(3)">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ob-screen" id="obs3">
+    <div class="ob-card">
+      <h3>How do you think about risk?</h3>
+      <p>Be honest — this changes the protocols MantleIQ will recommend.</p>
+      <div class="ob-options">
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">🛡️</div><div><div class="ob-opt-label">Low risk</div><div class="ob-opt-sub">Stable pairs, overcollateralized lending only</div></div></div>
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">⚖️</div><div><div class="ob-opt-label">Medium risk</div><div class="ob-opt-sub">Some volatility is fine for better yield</div></div></div>
+        <div class="ob-opt" onclick="selectOb(this)"><div class="ob-opt-icon">🚀</div><div><div class="ob-opt-label">Higher risk</div><div class="ob-opt-sub">Aggressive yield, volatile pairs, native tokens</div></div></div>
+      </div>
+      <div class="ob-nav">
+        <button class="action-btn" onclick="obNext(2)">← Back</button>
+        <button class="action-btn primary" onclick="obNext(4)">Build my path →</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="ob-screen" id="obs4">
+    <div class="ob-card">
+      <h3>Your Mantle Starting Path</h3>
+      <p>Based on your answers, here's where MantleIQ recommends you start.</p>
+      <div class="ob-result">
+        <h4>Recommended for you</h4>
+        <p><strong>Step 1 — Bridge to Mantle.</strong> Use the official Mantle Bridge or Stargate. Avg transaction cost is ~$0.002 vs $5–15 on Ethereum mainnet.</p>
+        <p><strong>Step 2 — Start with mETH.</strong> Swap ETH for mETH on Merchant Moe to earn base staking yield instantly. No lock-up, redeemable anytime.</p>
+        <p><strong>Step 3 — Deploy stable capital.</strong> Put idle USDC/USDT into stable pools on Agni Finance or Lendle for 5–8% APY with low volatility exposure.</p>
+        <p><strong>Step 4 — Activate restaking.</strong> Convert mETH to cmETH to layer EigenLayer rewards on top of base ETH yield. Zero additional capital required.</p>
+      </div>
+      <div class="ob-nav" style="justify-content:space-between;margin-top:1.5rem">
+        <button class="action-btn" onclick="obNext(3)">← Back</button>
+        <button class="action-btn primary" onclick="switchView('analytics',null)">Go to Dashboard →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ AI CHAT ════════════ -->
+<div id="view-chat" class="view">
+  <div class="chat-wrap">
+    <div class="chat-head">
+      <div class="chat-head-icon">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <polyline points="1,12 4,6 7,9 11,4 15,7" stroke="#00D1BF" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="4" cy="6" r="1.2" fill="#00D1BF"/>
+          <circle cx="11" cy="4" r="1.2" fill="#00D1BF"/>
+        </svg>
+      </div>
+      <div>
+        <div class="chat-head-label">MantleIQ</div>
+        <div class="chat-head-sub">Ask anything about Mantle, your wallet, or DeFi strategy</div>
+      </div>
+    </div>
+    <div class="chat-messages" id="chatMsgs">
+      <div class="msg ai">
+        <div class="msg-avatar">IQ</div>
+        <div class="msg-bubble">Hey — I'm MantleIQ. I have live access to Mantle's onchain data and I can help you navigate the ecosystem, understand your positions, or find yield opportunities that match your risk level. What are you trying to figure out?</div>
+      </div>
+    </div>
+    <div class="chat-suggestions">
+      <button class="chat-sugg" onclick="sendSugg(this)">What's the safest yield on Mantle?</button>
+      <button class="chat-sugg" onclick="sendSugg(this)">Explain mETH vs cmETH</button>
+      <button class="chat-sugg" onclick="sendSugg(this)">What is Merchant Moe?</button>
+      <button class="chat-sugg" onclick="sendSugg(this)">How do I bridge to Mantle?</button>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" type="text" placeholder="Ask MantleIQ anything about Mantle..." onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="chat-send" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <p>MantleIQ — AI Co-Pilot Concept · TVL: <a href="https://defillama.com/chain/mantle" target="_blank">DeFiLlama</a> · Yield: <a href="https://yields.llama.fi" target="_blank">yields.llama.fi</a></p>
+  <p style="margin-top:5px">Designed by <a class="footer-credit" href="https://x.com/web3dothan" target="_blank">@web3dothan</a> · Submitted for <a href="https://x.com/Mantle_Official" target="_blank">@Mantle_Official</a> AI Bounty</p>
+</footer>
+
+<script>
+// ══ VIEW SWITCHING ════════════════════════════
+function switchView(id, btn) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.ntab').forEach(t => t.classList.remove('on'));
+  document.getElementById('view-' + id).classList.add('active');
+  const map = {analytics:0,wallet:1,onboarding:2,chat:3};
+  if (map[id] !== undefined) document.querySelectorAll('.ntab')[map[id]]?.classList.add('on');
+}
+
+// ══ ANALYTICS ════════════════════════════════
+const PROTOCOLS = [
+  { slug:'merchant-moe',    name:'Merchant Moe',  color:'#00D1BF', type:'DEX · Liquidity Book AMM',     note:'LP fees + MOE rewards' },
+  { slug:'agni-finance',    name:'Agni Finance',  color:'#4B8EF5', type:'DEX · Concentrated Liquidity', note:'LP fees + incentives'  },
+  { slug:'meth-protocol',   name:'mETH Protocol', color:'#F5A623', type:'Liquid Staking · ETH',         note:'~2.56% net APY'        },
+  { slug:'init-capital',    name:'INIT Capital',  color:'#9B7FE8', type:'Lending · Liquidity Hooks',    note:'Variable'              },
+  { slug:'lendle',          name:'Lendle',        color:'#F04F4F', type:'Money Market',                 note:'Variable'              },
+  { slug:'stargate-finance',name:'Stargate',      color:'#00B5A5', type:'Bridge · Liquidity',           note:'LP rewards'            },
+];
+
+const tc='#6b7280', gc='rgba(255,255,255,0.04)';
+let curRange=30, curProto=null, chartData={};
+let tvlInst=null;
+
+function fmt(n){
+  if(!n||isNaN(n))return 'N/A';
+  if(n>=1e9)return '$'+(n/1e9).toFixed(2)+'B';
+  if(n>=1e6)return '$'+(n/1e6).toFixed(1)+'M';
+  if(n>=1e3)return '$'+(n/1e3).toFixed(1)+'K';
+  return '$'+n.toFixed(0);
+}
+
+function initChart(){
+  const ctx=document.getElementById('tvlChart').getContext('2d');
+  tvlInst=new Chart(ctx,{
+    type:'line', data:{labels:[],datasets:[]},
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false}},
+      scales:{
+        x:{ticks:{color:tc,font:{size:10},maxTicksLimit:6},grid:{color:gc}},
+        y:{ticks:{color:tc,font:{size:10},callback:v=>v>=1e9?'$'+(v/1e9).toFixed(2)+'B':v>=1e6?'$'+(v/1e6).toFixed(1)+'M':'$'+Math.round(v)},grid:{color:gc}}
+      }
+    }
+  });
+}
+
+function updateChart(){
+  if(!tvlInst)return;
+  const protos=curProto!==null?[PROTOCOLS[curProto]]:PROTOCOLS.filter(p=>chartData[p.slug]);
+  if(!protos.length)return;
+  const allTs=new Set();
+  protos.forEach(p=>{if(chartData[p.slug])chartData[p.slug].forEach(pt=>allTs.add(pt.date));});
+  const sorted=Array.from(allTs).sort().slice(-(curRange+1));
+  const labels=sorted.map(ts=>{const d=new Date(ts*1000);return d.toLocaleDateString('en-US',{month:'short',day:'numeric'});});
+  tvlInst.data.labels=labels;
+  tvlInst.data.datasets=protos.filter(p=>chartData[p.slug]).map(p=>{
+    const byDate={};chartData[p.slug].forEach(pt=>{byDate[pt.date]=pt.totalLiquidityUSD;});
+    return{label:p.name,data:sorted.map(d=>byDate[d]||null),borderColor:p.color,backgroundColor:'transparent',borderWidth:curProto!==null?2:1.6,pointRadius:0,tension:0.4,spanGaps:true};
+  });
+  tvlInst.update();
+  const lbl=curProto!==null?PROTOCOLS[curProto].name:'All protocols';
+  document.getElementById('chartLabel').textContent=`${lbl} — last ${curRange} days · live`;
+}
+
+function setRange(n,btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  btn.classList.add('on'); curRange=n; updateChart();
+}
+
+async function fetchProtocol(p){
+  try{
+    const r=await fetch(`https://api.llama.fi/protocol/${p.slug}`);
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+    const tvl=d.currentChainTvls?.Mantle??d.currentChainTvls?.mantle??null;
+    const history=d.chainTvls?.Mantle?.tvl??d.chainTvls?.mantle?.tvl??d.tvl??[];
+    return{...p,tvl,history};
+  }catch{return{...p,tvl:null,history:[]};}
+}
+
+async function fetchChainTvl(){
+  try{
+    const r=await fetch('https://api.llama.fi/v2/chains');
+    if(!r.ok)throw new Error();
+    const chains=await r.json();
+    const m=chains.find(c=>c.name?.toLowerCase()==='mantle');
+    return m?m.tvl:null;
+  }catch{return null;}
+}
+
+async function fetchYields(){
+  try{
+    const r=await fetch('https://yields.llama.fi/pools');
+    if(!r.ok)throw new Error();
+    const j=await r.json();
+    return(j.data||[]).filter(p=>p.chain==='Mantle'&&p.apy!=null&&p.apy>0&&p.tvlUsd>5000).sort((a,b)=>b.tvlUsd-a.tvlUsd).slice(0,10);
+  }catch{return[];}
+}
+
+function renderProtocols(protos){
+  const c=document.getElementById('protoList');
+  c.innerHTML='';
+  if(!protos.length){c.innerHTML='<div class="no-data">Could not load protocols</div>';return;}
+  protos.forEach((p,i)=>{
+    const row=document.createElement('div');
+    row.className='prow';
+    row.innerHTML=`<div class="pleft"><div class="pdot" style="background:${p.color}"></div><div><div class="pname">${p.name}</div><div class="ptype">${p.type}</div></div></div><div class="pright"><div class="papy apy-a" style="font-size:11px;color:${p.color}">${p.note}</div><div class="ptvl">${p.tvl?fmt(p.tvl):'N/A'} TVL · ${p.tvl?'live':'unavail.'}</div></div>`;
+    row.onclick=()=>{
+      document.querySelectorAll('.prow').forEach(r=>r.classList.remove('on'));
+      curProto=curProto===i?null:i;
+      if(curProto!==null)row.classList.add('on');
+      updateChart();
+    };
+    c.appendChild(row);
+  });
+}
+
+function renderYields(pools){
+  const c=document.getElementById('yieldContent');
+  if(!pools.length){c.innerHTML='<div class="no-data">No yield data available</div>';return;}
+  document.getElementById('yieldSub').textContent=`${pools.length} active pools · live`;
+  c.innerHTML=`<table class="ytable"><thead><tr><th>Protocol</th><th>Pool</th><th>APY</th><th>TVL</th></tr></thead><tbody>${pools.map(p=>{const col=p.apy>=10?'var(--green)':p.apy>=5?'var(--amber)':'var(--blue)';return`<tr><td>${p.project}</td><td style="max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.symbol}</td><td style="color:${col};font-weight:500">${p.apy.toFixed(1)}%</td><td>${fmt(p.tvlUsd)}</td></tr>`;}).join('')}</tbody></table>`;
+}
+
+// ══ ONBOARDING ════════════════════════════════
+function selectOb(el){
+  el.closest('.ob-options').querySelectorAll('.ob-opt').forEach(o=>o.classList.remove('selected'));
+  el.classList.add('selected');
+}
+function obNext(step){
+  document.querySelectorAll('.ob-screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('obs'+step).classList.add('active');
+  for(let i=1;i<=4;i++){
+    const n=document.getElementById('obn'+i),l=document.getElementById('obl'+i);
+    if(i<step){n.classList.add('done');n.classList.remove('active');if(l)l.classList.add('done');}
+    else if(i===step){n.classList.add('active');n.classList.remove('done');}
+    else{n.classList.remove('done','active');if(l)l.classList.remove('done');}
+  }
+}
+
+// ══ CHAT ══════════════════════════════════════
+const RESPONSES={
+  meth:`<strong>mETH vs cmETH:</strong><ul><li><strong>mETH</strong> — deposit ETH, get mETH back, earn base Ethereum staking yield (~2.56% net). Liquid, redeemable anytime.</li><li><strong>cmETH</strong> — restaked mETH via EigenLayer. Earn base staking yield <em>plus</em> EigenLayer operator rewards. 162k+ mETH restaked securing EigenDA. Zero slashing incidents to date.</li></ul>`,
+  yield:`<strong>Safest yield on Mantle right now:</strong><ul><li><strong>Stable pairs on Agni Finance</strong> — USDC/USDT conc. liquidity, minimal IL risk</li><li><strong>Lendle</strong> — Overcollateralized lending, supply USDC/USDT for a steady rate</li><li><strong>mETH staking</strong> — ~2.56% net APY, ETH-denominated, no peg risk</li></ul>Check the Analytics tab for live APY figures.`,
+  merchant:`<strong>Merchant Moe</strong> is the largest DEX on Mantle by TVL. Uses a Liquidity Book (LB) AMM — liquidity concentrated in discrete price bins for higher capital efficiency. Most active pairs: MNT/USDT, mETH/ETH. 30-day volume: $162M+ (Messari Q3 2025).`,
+  bridge:`<strong>Bridging to Mantle:</strong><ul><li><strong>Official Mantle Bridge</strong> — bridge.mantle.xyz. ETH, USDC, USDT from Ethereum. ~20 min.</li><li><strong>Stargate Finance</strong> — more chains, faster finality</li><li><strong>Everclear</strong> — now live, direct stable deposits without manual bridging</li></ul>Avg tx cost after bridging: ~$0.002 vs $5–15 on Ethereum mainnet.`,
+  default:`Good question. In the full MantleIQ product I'd pull live data from Mantle's contracts to answer that specifically for your wallet. For now, check the Analytics tab for live protocol data, or the Onboarding tab to find your starting path.`
+};
+
+function addMsg(role,html){
+  const msgs=document.getElementById('chatMsgs');
+  const div=document.createElement('div');
+  div.className='msg '+role;
+  div.innerHTML=`<div class="msg-avatar">${role==='ai'?'IQ':'You'}</div><div class="msg-bubble">${html}</div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function addTyping(){
+  const msgs=document.getElementById('chatMsgs');
+  const div=document.createElement('div');div.className='msg ai';div.id='typing-ind';
+  div.innerHTML=`<div class="msg-avatar">IQ</div><div class="msg-bubble"><div class="typing"><span></span><span></span><span></span></div></div>`;
+  msgs.appendChild(div);msgs.scrollTop=msgs.scrollHeight;
+}
+function removeTyping(){const t=document.getElementById('typing-ind');if(t)t.remove();}
+function getResponse(q){
+  const lq=q.toLowerCase();
+  if(lq.includes('meth')||lq.includes('cmeth')||lq.includes('restaking'))return RESPONSES.meth;
+  if(lq.includes('yield')||lq.includes('safe')||lq.includes('stable')||lq.includes('earn'))return RESPONSES.yield;
+  if(lq.includes('merchant')||lq.includes('moe')||lq.includes('dex'))return RESPONSES.merchant;
+  if(lq.includes('bridge')||lq.includes('transfer')||lq.includes('deposit'))return RESPONSES.bridge;
+  return RESPONSES.default;
+}
+function sendChat(){
+  const input=document.getElementById('chatInput');
+  const q=input.value.trim();if(!q)return;
+  input.value='';addMsg('user',q);addTyping();
+  setTimeout(()=>{removeTyping();addMsg('ai',getResponse(q));},900+Math.random()*400);
+}
+function sendSugg(btn){document.getElementById('chatInput').value=btn.textContent;sendChat();}
+
+// ══ MAIN ══════════════════════════════════════
+async function main(){
+  initChart();
+  const[protos,chainTvl,yields]=await Promise.all([
+    Promise.all(PROTOCOLS.map(fetchProtocol)),
+    fetchChainTvl(),
+    fetchYields(),
+  ]);
+  protos.forEach(p=>{if(p.history?.length)chartData[p.slug]=p.history;});
+  const moe=protos.find(p=>p.slug==='merchant-moe');
+  const agni=protos.find(p=>p.slug==='agni-finance');
+  const meth=protos.find(p=>p.slug==='meth-protocol');
+  document.getElementById('chainTvl').textContent=chainTvl?fmt(chainTvl):'$642M+';
+  document.getElementById('methTvl').textContent=meth?.tvl?fmt(meth.tvl):'$1.1B+';
+  document.getElementById('moeTvl').textContent=moe?.tvl?fmt(moe.tvl):'~$73M';
+  document.getElementById('agniTvl').textContent=agni?.tvl?fmt(agni.tvl):'~$88M';
+  renderProtocols(protos);
+  renderYields(yields);
+  updateChart();
+}
+main();
+</script>
+</body>
+</html>
